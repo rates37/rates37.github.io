@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BuildYourOwnEmbedding.responses &mdash; Build Your Own Embedding 0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../../_static/documentation_options.js?v=2709fde1"></script>
+        <script src="../../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            Build Your Own Embedding
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../BuildYourOwnEmbedding.html">BuildYourOwnEmbedding</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Build Your Own Embedding</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">BuildYourOwnEmbedding.responses</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for BuildYourOwnEmbedding.responses</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">numpy.typing</span> <span class="k">as</span> <span class="nn">npt</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Type</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">List</span>
+<span class="kn">import</span> <span class="nn">inspect</span>
+<span class="kn">import</span> <span class="nn">itertools</span>
+<span class="kn">import</span> <span class="nn">mplcursors</span>
+<span class="kn">from</span> <span class="nn">matplotlib.widgets</span> <span class="kn">import</span> <span class="n">Slider</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">from</span> <span class="nn">mpl_toolkits.mplot3d</span> <span class="kn">import</span> <span class="n">Axes3D</span>
+
+<span class="kn">from</span> <span class="nn">.parameters</span> <span class="kn">import</span> <span class="n">Parameter</span>
+<span class="kn">from</span> <span class="nn">.functional</span> <span class="kn">import</span> <span class="n">inverse_correlation</span><span class="p">,</span> <span class="n">plot_rdm</span><span class="p">,</span> <span class="n">mds</span>
+
+<span class="c1">##! =====================================</span>
+<span class="c1">##!             Responses:</span>
+<span class="c1">##! =====================================</span>
+
+
+<div class="viewcode-block" id="ResponseFunction">
+<a class="viewcode-back" href="../../BuildYourOwnEmbedding.html#BuildYourOwnEmbedding.responses.ResponseFunction">[docs]</a>
+<span class="k">class</span> <span class="nc">ResponseFunction</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Base class for defining neural responses.</span>
+
+<span class="sd">    The `ResponseFunction` class serves as an abstract base class for creating neural</span>
+<span class="sd">    response functions that can be evaluated based on input data. This class provides</span>
+<span class="sd">    a standardised interface for defining neural response curves, allowing users to</span>
+<span class="sd">    implement custom responses by extending this class and implementing the `evaluate`</span>
+<span class="sd">    method. It also supports mathematical operations to combine responses, creating</span>
+<span class="sd">    composite response functions.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        params (Dict): A dictionary containing response-specific parameters used</span>
+<span class="sd">                       to define the behavior of the response function.</span>
+
+<span class="sd">    Methods:</span>
+<span class="sd">        evaluate(x: npt.NDArray) -&gt; npt.NDArray:</span>
+<span class="sd">            Abstract method to evaluate the neural response for a given input.</span>
+
+<span class="sd">        __call__(x: npt.NDArray) -&gt; npt.NDArray:</span>
+<span class="sd">            Calls the `evaluate` method to compute the response for the given input.</span>
+
+<span class="sd">        __add__(other: ResponseFunction) -&gt; CompositeResponse:</span>
+<span class="sd">            Combines this response with another response using addition.</span>
+
+<span class="sd">        __sub__(other: ResponseFunction) -&gt; CompositeResponse:</span>
+<span class="sd">            Combines this response with another response using subtraction.</span>
+
+<span class="sd">        __mul__(other: ResponseFunction) -&gt; CompositeResponse:</span>
+<span class="sd">            Combines this response with another response using multiplication.</span>
+
+<span class="sd">        __str__() -&gt; str:</span>
+<span class="sd">            Returns a string representation of the response function.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialises the response function with specific parameters.</span>
+
+<span class="sd">        This constructor accepts named arguments for the parameters that define</span>
+<span class="sd">        the behavior of the neural response function. These parameters are stored</span>
+<span class="sd">        in a dictionary for later use by the response function.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            **kwargs (Any):</span>
+<span class="sd">                Named arguments representing the parameters of the response function.</span>
+
+<span class="sd">        Notes:</span>
+<span class="sd">            Subclasses should provide specific parameter requirements, which will be</span>
+<span class="sd">            documented in their respective class definitions.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="n">kwargs</span>  <span class="c1"># Store all parameters for general use</span>
+
+<div class="viewcode-block" id="ResponseFunction.evaluate">
+<a class="viewcode-back" href="../../BuildYourOwnEmbedding.html#BuildYourOwnEmbedding.responses.ResponseFunction.evaluate">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Evaluate the response of the neuron for a given input.</span>
+
+<span class="sd">        This abstract method must be implemented by subclasses to define how the</span>
+<span class="sd">        response function computes output values based on input data.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x (npt.NDArray):</span>
+<span class="sd">                The input data for which the response is evaluated. This should be</span>
+<span class="sd">                a Numpy array representing the stimulus or feature input to the neuron.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            npt.NDArray:</span>
+<span class="sd">                A Numpy array representing the evaluated response values corresponding</span>
+<span class="sd">                to the input data.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            NotImplementedError:</span>
+<span class="sd">                This method must be overridden by subclasses, otherwise, calling it</span>
+<span class="sd">                will raise this error.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compute the response by calling the evaluate method.</span>
+
+<span class="sd">        This method allows the object to be used as a callable function, directly</span>
+<span class="sd">        invoking the `evaluate` method when the instance is called with input data.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x (npt.NDArray):</span>
+<span class="sd">                The input data for which the response is evaluated.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            npt.NDArray:</span>
+<span class="sd">                The response values computed by the `evaluate` method.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__add__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">ResponseFunction</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CompositeResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add another response function to this response function.</span>
+
+<span class="sd">        This method allows the creation of a composite response by adding the outputs</span>
+<span class="sd">        of two different response functions. The resulting composite response is</span>
+<span class="sd">        represented by a new instance of the `CompositeResponse` class.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            other (ResponseFunction):</span>
+<span class="sd">                The other response function to be added to this response.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            CompositeResponse:</span>
+<span class="sd">                A new `CompositeResponse` instance representing the combined response</span>
+<span class="sd">                of this response and the other response.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">CompositeResponse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">add</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__sub__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">ResponseFunction</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CompositeResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Subtract another response function from this response function.</span>
+
+<span class="sd">        This method allows the creation of a composite response by subtracting the</span>
+<span class="sd">        outputs of another response function from this response. The resulting composite</span>
+<span class="sd">        response is represented by a new instance of the `CompositeResponse` class.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            other (ResponseFunction):</span>
+<span class="sd">                The other response function to be subtracted from this response.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            CompositeResponse:</span>
+<span class="sd">                A new `CompositeResponse` instance representing the difference between</span>
+<span class="sd">                this response and the other response.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">CompositeResponse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">subtract</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__mul__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">ResponseFunction</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CompositeResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Multiply this response function by another response function.</span>
+
+<span class="sd">        This method allows the creation of a composite response by multiplying the</span>
+<span class="sd">        outputs of two different response functions. The resulting composite response</span>
+<span class="sd">        is represented by a new instance of the `CompositeResponse` class.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            other (ResponseFunction):</span>
+<span class="sd">                The other response function to multiply with this response.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            CompositeResponse:</span>
+<span class="sd">                A new `CompositeResponse` instance representing the product of this</span>
+<span class="sd">                response and the other response.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">CompositeResponse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a string representation of the response function.</span>
+
+<span class="sd">        This method provides a human-readable representation of the response function,</span>
+<span class="sd">        including its class name and the parameters used to define its behavior.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str:</span>
+<span class="sd">                A string representation of the response function, displaying the class</span>
+<span class="sd">                name and its parameter values.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="si">}</span><span class="s2">&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="CompositeResponse">
+<a class="viewcode-back" href="../../BuildYourOwnEmbedding.html#BuildYourOwnEmbedding.responses.CompositeResponse">[docs]</a>
+<span class="k">class</span> <span class="nc">CompositeResponse</span><span class="p">(</span><span class="n">ResponseFunction</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Composite response class that combines two responses using a specified operation.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">response1</span><span class="p">:</span> <span class="n">ResponseFunction</span><span class="p">,</span>
+        <span class="n">response2</span><span class="p">:</span> <span class="n">ResponseFunction</span><span class="p">,</span>
+        <span class="n">operation</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">,</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">],</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialises a composite response function from two individual responses and an operation.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            response1 (ResponseFunction): First response</span>
+<span class="sd">            response2 (ResponseFunction): Second response</span>
+<span class="sd">            operation (Callable[[npt.NDArray, npt.NDArray], npt.NDArray]): An operation applied to the outputs of the individual responses</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">response1</span><span class="p">:</span> <span class="n">ResponseFunction</span> <span class="o">=</span> <span class="n">response1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">response2</span><span class="p">:</span> <span class="n">ResponseFunction</span> <span class="o">=</span> <span class="n">response2</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">operation</span> <span class="o">=</span> <span class="n">operation</span>
+
+<div class="viewcode-block" id="CompositeResponse.evaluate">
+<a class="viewcode-back" href="../../BuildYourOwnEmbedding.html#BuildYourOwnEmbedding.responses.CompositeResponse.evaluate">[docs]</a>
+    <span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">operation</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">response1</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">response2</span><span class="p">(</span><span class="n">x</span><span class="p">))</span></div>
+
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">operation</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">(</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">response1</span><span class="p">)</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">response2</span><span class="p">)</span><span class="si">}</span><span class="s2">)&quot;</span>
+        <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="GaussianResponse">
+<a class="viewcode-back" href="../../BuildYourOwnEmbedding.html#BuildYourOwnEmbedding.responses.GaussianResponse">[docs]</a>
+<span class="k">class</span> <span class="nc">GaussianResponse</span><span class="p">(</span><span class="n">ResponseFunction</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mean</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">number</span><span class="p">,</span> <span class="n">std</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">number</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">mean</span><span class="o">=</span><span class="n">mean</span><span class="p">,</span> <span class="n">std</span><span class="o">=</span><span class="n">std</span><span class="p">)</span>
+
+<div class="viewcode-block" id="GaussianResponse.evaluate">
+<a class="viewcode-back" href="../../BuildYourOwnEmbedding.html#BuildYourOwnEmbedding.responses.GaussianResponse.evaluate">[docs]</a>
+    <span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">,</span> <span class="n">dtype</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">:</span>
+        <span class="n">mean</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;mean&quot;</span><span class="p">]</span>
+        <span class="n">std</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;std&quot;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">dtype</span><span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mf">0.5</span> <span class="o">*</span> <span class="p">((</span><span class="n">x</span> <span class="o">-</span> <span class="n">mean</span><span class="p">)</span> <span class="o">/</span> <span class="n">std</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">std</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">))</span>
+        <span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="SigmoidResponse">
+<a class="viewcode-back" href="../../BuildYourOwnEmbedding.html#BuildYourOwnEmbedding.responses.SigmoidResponse">[docs]</a>
+<span class="k">class</span> <span class="nc">SigmoidResponse</span><span class="p">(</span><span class="n">ResponseFunction</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">alpha</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">number</span><span class="p">,</span> <span class="n">beta</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">number</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span><span class="o">=</span><span class="n">beta</span><span class="p">)</span>
+
+<div class="viewcode-block" id="SigmoidResponse.evaluate">
+<a class="viewcode-back" href="../../BuildYourOwnEmbedding.html#BuildYourOwnEmbedding.responses.SigmoidResponse.evaluate">[docs]</a>
+    <span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">,</span> <span class="n">dtype</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">:</span>
+        <span class="n">alpha</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;alpha&quot;</span><span class="p">]</span>
+        <span class="n">beta</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;beta&quot;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">dtype</span><span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">alpha</span> <span class="o">*</span> <span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">beta</span><span class="p">))))</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="VonMisesResponse">
+<a class="viewcode-back" href="../../BuildYourOwnEmbedding.html#BuildYourOwnEmbedding.responses.VonMisesResponse">[docs]</a>
+<span class="k">class</span> <span class="nc">VonMisesResponse</span><span class="p">(</span><span class="n">ResponseFunction</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kappa</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">number</span><span class="p">,</span> <span class="n">theta</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">number</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">kappa</span><span class="o">=</span><span class="n">kappa</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="n">theta</span><span class="p">)</span>
+
+<div class="viewcode-block" id="VonMisesResponse.evaluate">
+<a class="viewcode-back" href="../../BuildYourOwnEmbedding.html#BuildYourOwnEmbedding.responses.VonMisesResponse.evaluate">[docs]</a>
+    <span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">,</span> <span class="n">dtype</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">:</span>
+        <span class="n">kappa</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;kappa&quot;</span><span class="p">]</span>
+        <span class="n">theta</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;theta&quot;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">kappa</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">theta</span><span class="p">))</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sinh</span><span class="p">(</span><span class="n">kappa</span><span class="p">))</span></div>
+</div>
+
+
+
+<span class="c1">##! =====================================</span>
+<span class="c1">##!         Response Manager:</span>
+<span class="c1">##! =====================================</span>
+<span class="c1"># this class will generate sets of responses:</span>
+<div class="viewcode-block" id="ResponseManager">
+<a class="viewcode-back" href="../../BuildYourOwnEmbedding.html#BuildYourOwnEmbedding.responses.ResponseManager">[docs]</a>
+<span class="k">class</span> <span class="nc">ResponseManager</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">responseClasses</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span>
+            <span class="n">Type</span><span class="p">[</span><span class="n">ResponseFunction</span><span class="p">],</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">ResponseFunction</span><span class="p">],</span> <span class="o">...</span><span class="p">]</span>
+        <span class="p">],</span>
+        <span class="o">**</span><span class="n">parameters</span><span class="p">:</span> <span class="n">Parameter</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialises response manager class with specific response type and parameters.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            responseClasses (Type[ResponseFunction]): A single response class or a tuple of response classes to generate responses for.</span>
+<span class="sd">            **param_strategies (Dict[str, Parameter]): Parameter strategies for each response class.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">responseClasses</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">ResponseFunction</span><span class="p">]</span> <span class="o">=</span> <span class="n">responseClasses</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Parameter</span><span class="p">]</span> <span class="o">=</span> <span class="n">parameters</span>
+
+    <span class="k">def</span> <span class="nf">_get_response_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Gets the names of the parameters from the response class&#39; __init__ method</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List[str]: A list of parameter names</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">responseClasses</span><span class="o">.</span><span class="fm">__init__</span><span class="p">)</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">keys</span><span class="p">())[</span>
+            <span class="mi">1</span><span class="p">:</span>
+        <span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">_get_combinations</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Gets all combinations of parameter values based on the input parameters</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List[Dict[str, Any]]: A list of dictionaries containing all combinations of parameter values</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># paramValuesDict = {str(i): param.get_values() for i, param in enumerate(self.parameters)} #!</span>
+        <span class="n">paramValuesDict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span>
+        <span class="n">paramNames</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_response_parameters</span><span class="p">()</span>
+        <span class="n">paramCombinations</span> <span class="o">=</span> <span class="n">itertools</span><span class="o">.</span><span class="n">product</span><span class="p">(</span>
+            <span class="o">*</span><span class="p">[</span><span class="n">p</span><span class="o">.</span><span class="n">get_values</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="p">[</span><span class="o">*</span><span class="n">paramValuesDict</span><span class="o">.</span><span class="n">values</span><span class="p">()]]</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="p">[</span><span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">paramNames</span><span class="p">,</span> <span class="n">paramCombo</span><span class="p">))</span> <span class="k">for</span> <span class="n">paramCombo</span> <span class="ow">in</span> <span class="n">paramCombinations</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">_generate_response</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">,</span> <span class="n">responseParams</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ResponseData</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generates a single response based on the provided parameter values</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x (npt.NDArray): The input data for which the response is generated</span>
+<span class="sd">            responseParams (Dict[str, Any]): Parameter values for the response</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ResponseData: A ResponseData object containing the response values and the corresponding parameters.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">responseClasses</span><span class="p">(</span><span class="o">**</span><span class="n">responseParams</span><span class="p">)</span>
+        <span class="n">responseValues</span> <span class="o">=</span> <span class="n">response</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ResponseData</span><span class="p">(</span>
+            <span class="n">params</span><span class="o">=</span><span class="n">responseParams</span><span class="p">,</span>
+            <span class="n">response</span><span class="o">=</span><span class="n">responseValues</span><span class="p">,</span>
+            <span class="n">responseFunction</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">responseClasses</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+            <span class="n">x</span><span class="o">=</span><span class="n">x</span><span class="p">,</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="ResponseManager.generate_responses">
+<a class="viewcode-back" href="../../BuildYourOwnEmbedding.html#BuildYourOwnEmbedding.responses.ResponseManager.generate_responses">[docs]</a>
+    <span class="k">def</span> <span class="nf">generate_responses</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">ResponseData</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generates responses for each combination of parameter values</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x (npt.NDArray): The input data for which the response is generated</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List[ResponseData]: List of ResponseData objects containing each response and the corresponding parameters.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">paramCombinations</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_combinations</span><span class="p">()</span>
+        <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_generate_response</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span> <span class="k">for</span> <span class="n">params</span> <span class="ow">in</span> <span class="n">paramCombinations</span><span class="p">]</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="ResponseData">
+<a class="viewcode-back" href="../../BuildYourOwnEmbedding.html#BuildYourOwnEmbedding.responses.ResponseData">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">ResponseData</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Data class for storing a single response output and the parameters that created it.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        params (Dict[str, np.number]): The parameters used for generating the response.</span>
+<span class="sd">        response (np.ndarray): The response values.</span>
+<span class="sd">        responseFunction (str): The name of the Response Function that generated this Response</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">params</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">npt</span><span class="o">.</span><span class="n">number</span><span class="p">]</span>
+    <span class="n">response</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span>
+    <span class="n">responseFunction</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">x</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">responseFunction</span><span class="si">}</span><span class="s2">:</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">paramName</span><span class="si">}</span><span class="s2"> = </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="n">paramName</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="k">for</span> <span class="n">paramName</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+        <span class="p">)</span></div>
+
+
+
+<span class="c1"># stores a set of responses</span>
+<div class="viewcode-block" id="ResponseSet">
+<a class="viewcode-back" href="../../BuildYourOwnEmbedding.html#BuildYourOwnEmbedding.responses.ResponseSet">[docs]</a>
+<span class="k">class</span> <span class="nc">ResponseSet</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">responses</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">ResponseData</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">responses</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">responses</span> <span class="o">=</span> <span class="n">responses</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">responses</span> <span class="o">=</span> <span class="p">[]</span>
+
+<div class="viewcode-block" id="ResponseSet.compute_rdm">
+<a class="viewcode-back" href="../../BuildYourOwnEmbedding.html#BuildYourOwnEmbedding.responses.ResponseSet.compute_rdm">[docs]</a>
+    <span class="k">def</span> <span class="nf">compute_rdm</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">dissimilarityMetric</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span>
+            <span class="p">[</span><span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">,</span> <span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">],</span> <span class="n">npt</span><span class="o">.</span><span class="n">number</span>
+        <span class="p">]</span> <span class="o">=</span> <span class="n">inverse_correlation</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">:</span>
+        <span class="n">n</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">responses</span><span class="p">)</span>
+        <span class="n">rdm</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n</span><span class="p">,</span> <span class="n">n</span><span class="p">))</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
+                <span class="n">rdm</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">rdm</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">dissimilarityMetric</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">responses</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">response</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">responses</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">response</span>
+                <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">rdm</span></div>
+
+
+<div class="viewcode-block" id="ResponseSet.compute_rgtm">
+<a class="viewcode-back" href="../../BuildYourOwnEmbedding.html#BuildYourOwnEmbedding.responses.ResponseSet.compute_rgtm">[docs]</a>
+    <span class="k">def</span> <span class="nf">compute_rgtm</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">lowerBound</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">number</span><span class="p">,</span>
+        <span class="n">upperBound</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">number</span><span class="p">,</span>
+        <span class="n">dissimilarityMetric</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span>
+            <span class="p">[</span><span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">,</span> <span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">],</span> <span class="n">npt</span><span class="o">.</span><span class="n">number</span>
+        <span class="p">]</span> <span class="o">=</span> <span class="n">inverse_correlation</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">:</span>
+
+        <span class="k">assert</span> <span class="n">lowerBound</span> <span class="o">&lt;=</span> <span class="n">upperBound</span>
+
+        <span class="n">n</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">responses</span><span class="p">)</span>
+        <span class="n">rgtm</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n</span><span class="p">,</span> <span class="n">n</span><span class="p">))</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
+                <span class="c1"># compute dissimilarity:</span>
+                <span class="n">dissimilarity</span> <span class="o">=</span> <span class="n">dissimilarityMetric</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">responses</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">response</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">responses</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">response</span>
+                <span class="p">)</span>
+
+                <span class="c1"># compute geo-topological transform:</span>
+                <span class="k">if</span> <span class="n">dissimilarity</span> <span class="o">&lt;=</span> <span class="n">lowerBound</span><span class="p">:</span>
+                    <span class="n">transformedDissimilarity</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="k">elif</span> <span class="n">dissimilarity</span> <span class="o">&gt;=</span> <span class="n">upperBound</span><span class="p">:</span>
+                    <span class="n">transformedDissimilarity</span> <span class="o">=</span> <span class="mi">1</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">transformedDissimilarity</span> <span class="o">=</span> <span class="p">(</span><span class="n">dissimilarity</span> <span class="o">-</span> <span class="n">lowerBound</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span>
+                        <span class="n">upperBound</span> <span class="o">-</span> <span class="n">lowerBound</span>
+                    <span class="p">)</span>
+                <span class="n">rgtm</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">rgtm</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">transformedDissimilarity</span>
+        <span class="k">return</span> <span class="n">rgtm</span></div>
+
+
+<div class="viewcode-block" id="ResponseSet.plot_rgtm">
+<a class="viewcode-back" href="../../BuildYourOwnEmbedding.html#BuildYourOwnEmbedding.responses.ResponseSet.plot_rgtm">[docs]</a>
+    <span class="k">def</span> <span class="nf">plot_rgtm</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">lowerBound</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">number</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">upperBound</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">number</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">dissimilarityMetric</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span>
+            <span class="p">[</span><span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">,</span> <span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">],</span> <span class="n">npt</span><span class="o">.</span><span class="n">number</span>
+        <span class="p">]</span> <span class="o">=</span> <span class="n">inverse_correlation</span><span class="p">,</span>
+        <span class="n">interactive</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">labels</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">cmap</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;viridis&quot;</span><span class="p">,</span>
+        <span class="n">title</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Representational Geo-Topological Matrix&quot;</span><span class="p">,</span>
+        <span class="n">figsize</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="mi">7</span><span class="p">),</span>
+        <span class="n">dissimilarityLabel</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Dissimilarity&quot;</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+
+        <span class="n">rgtm</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_rgtm</span><span class="p">(</span>
+            <span class="n">lowerBound</span><span class="p">,</span> <span class="n">upperBound</span><span class="p">,</span> <span class="n">dissimilarityMetric</span>
+        <span class="p">)</span>
+
+        <span class="c1"># create the plot:</span>
+        <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="n">figsize</span><span class="p">)</span>
+
+        <span class="c1"># display initial RGTM:</span>
+        <span class="n">heatmap</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">rgtm</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># ?</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">heatmap</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">dissimilarityLabel</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">title</span><span class="p">)</span>
+
+        <span class="c1"># todo: show labels if not none:</span>
+        <span class="c1"># if labels:</span>
+        <span class="c1">#     ax.set_xticks(labels)</span>
+        <span class="c1">#     ax.set_yticks(labels)</span>
+
+        <span class="c1"># if interactive, add interactivity behaviour:</span>
+        <span class="k">if</span> <span class="n">interactive</span><span class="p">:</span>
+            <span class="c1"># reposition plot to account for sliders:</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">subplots_adjust</span><span class="p">(</span><span class="n">left</span><span class="o">=</span><span class="mf">0.25</span><span class="p">,</span> <span class="n">bottom</span><span class="o">=</span><span class="mf">0.25</span><span class="p">)</span>
+
+            <span class="c1"># add axes for the sliders:</span>
+            <span class="n">lowerBoundSliderAx</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">axes</span><span class="p">(</span>
+                <span class="p">[</span><span class="mf">0.25</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.65</span><span class="p">,</span> <span class="mf">0.03</span><span class="p">],</span> <span class="n">facecolor</span><span class="o">=</span><span class="s2">&quot;lightgoldenrodyellow&quot;</span>
+            <span class="p">)</span>
+            <span class="n">upperBoundSliderAx</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">axes</span><span class="p">(</span>
+                <span class="p">[</span><span class="mf">0.25</span><span class="p">,</span> <span class="mf">0.15</span><span class="p">,</span> <span class="mf">0.65</span><span class="p">,</span> <span class="mf">0.03</span><span class="p">],</span> <span class="n">facecolor</span><span class="o">=</span><span class="s2">&quot;lightgoldenrodyellow&quot;</span>
+            <span class="p">)</span>
+
+            <span class="c1"># add the sliders:</span>
+            <span class="n">lowerBoundSlider</span> <span class="o">=</span> <span class="n">Slider</span><span class="p">(</span>
+                <span class="n">ax</span><span class="o">=</span><span class="n">lowerBoundSliderAx</span><span class="p">,</span>
+                <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Lower Bound (l)&quot;</span><span class="p">,</span>
+                <span class="n">valmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                <span class="n">valmax</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                <span class="n">valinit</span><span class="o">=</span><span class="n">lowerBound</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">upperBoundSlider</span> <span class="o">=</span> <span class="n">Slider</span><span class="p">(</span>
+                <span class="n">ax</span><span class="o">=</span><span class="n">upperBoundSliderAx</span><span class="p">,</span>
+                <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Upper Bound (u)&quot;</span><span class="p">,</span>
+                <span class="n">valmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                <span class="n">valmax</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                <span class="n">valinit</span><span class="o">=</span><span class="n">upperBound</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="c1"># define update function for slider on change event:</span>
+            <span class="k">def</span> <span class="nf">onChange</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+                <span class="c1"># re-compute the RGTM:</span>
+                <span class="n">newLowerBound</span> <span class="o">=</span> <span class="n">lowerBoundSlider</span><span class="o">.</span><span class="n">val</span>
+                <span class="n">newUpperBound</span> <span class="o">=</span> <span class="n">upperBoundSlider</span><span class="o">.</span><span class="n">val</span>
+                <span class="k">if</span> <span class="n">newLowerBound</span> <span class="o">&gt;</span> <span class="n">newUpperBound</span><span class="p">:</span>
+                    <span class="c1"># display error message:</span>
+                    <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span>
+                        <span class="s2">&quot;Error: Upper bound must be greater than or equal to the lower bound&quot;</span><span class="p">,</span>
+                        <span class="n">color</span><span class="o">=</span><span class="s2">&quot;red&quot;</span><span class="p">,</span>
+                    <span class="p">)</span>
+                    <span class="k">return</span>  <span class="c1"># don&#39;t plot if bounds are invalid</span>
+
+                <span class="c1"># compute new RGTM:</span>
+                <span class="n">newRgtm</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_rgtm</span><span class="p">(</span>
+                    <span class="n">newLowerBound</span><span class="p">,</span> <span class="n">newUpperBound</span><span class="p">,</span> <span class="n">dissimilarityMetric</span>
+                <span class="p">)</span>
+
+                <span class="c1"># update plot:</span>
+                <span class="n">heatmap</span><span class="o">.</span><span class="n">set_data</span><span class="p">(</span><span class="n">newRgtm</span><span class="p">)</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;black&quot;</span><span class="p">)</span>
+                <span class="n">fig</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">draw_idle</span><span class="p">()</span>
+
+            <span class="c1"># add on change function to both sliders</span>
+            <span class="n">lowerBoundSlider</span><span class="o">.</span><span class="n">on_changed</span><span class="p">(</span><span class="n">onChange</span><span class="p">)</span>
+            <span class="n">upperBoundSlider</span><span class="o">.</span><span class="n">on_changed</span><span class="p">(</span><span class="n">onChange</span><span class="p">)</span>
+
+        <span class="c1"># show the plot:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="ResponseSet.plot_rdm">
+<a class="viewcode-back" href="../../BuildYourOwnEmbedding.html#BuildYourOwnEmbedding.responses.ResponseSet.plot_rdm">[docs]</a>
+    <span class="k">def</span> <span class="nf">plot_rdm</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">dissimilarityMetric</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span>
+            <span class="p">[</span><span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">,</span> <span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">],</span> <span class="n">npt</span><span class="o">.</span><span class="n">number</span>
+        <span class="p">]</span> <span class="o">=</span> <span class="n">inverse_correlation</span><span class="p">,</span>
+        <span class="n">labels</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">cmap</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;viridis&quot;</span><span class="p">,</span>
+        <span class="n">title</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">figsize</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="mi">7</span><span class="p">),</span>
+        <span class="n">dissimilarityLabel</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Dissimilarity&quot;</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">rdm</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_rdm</span><span class="p">(</span><span class="n">dissimilarityMetric</span><span class="p">)</span>
+        <span class="n">plot_rdm</span><span class="p">(</span><span class="n">rdm</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">cmap</span><span class="p">,</span> <span class="n">title</span><span class="p">,</span> <span class="n">figsize</span><span class="p">,</span> <span class="n">dissimilarityLabel</span><span class="p">)</span>
+        <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="ResponseSet.plot_responses">
+<a class="viewcode-back" href="../../BuildYourOwnEmbedding.html#BuildYourOwnEmbedding.responses.ResponseSet.plot_responses">[docs]</a>
+    <span class="k">def</span> <span class="nf">plot_responses</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">figsize</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="mi">7</span><span class="p">),</span>
+        <span class="n">xlabel</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Stimuli&quot;</span><span class="p">,</span>
+        <span class="n">ylabel</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Response&quot;</span><span class="p">,</span>
+        <span class="n">title</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Responses&quot;</span><span class="p">,</span>
+        <span class="n">grid</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">hoverEffects</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>  <span class="c1"># if false will not add hover effect to plot</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+
+        <span class="c1"># plot the responses:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="n">figsize</span><span class="p">)</span>
+        <span class="n">plottedResponses</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">responses</span><span class="p">)):</span>
+            <span class="p">(</span><span class="n">plottedResponse</span><span class="p">,)</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">responses</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">responses</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">response</span>
+            <span class="p">)</span>
+            <span class="n">plottedResponses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">plottedResponse</span><span class="p">)</span>
+
+        <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="n">xlabel</span><span class="o">=</span><span class="n">xlabel</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="n">ylabel</span><span class="o">=</span><span class="n">ylabel</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="n">title</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">visible</span><span class="o">=</span><span class="n">grid</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">hoverEffects</span><span class="p">:</span>
+            <span class="n">cursor</span> <span class="o">=</span> <span class="n">mplcursors</span><span class="o">.</span><span class="n">cursor</span><span class="p">(</span><span class="n">hover</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+            <span class="nd">@cursor</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s2">&quot;add&quot;</span><span class="p">)</span>
+            <span class="k">def</span> <span class="nf">on_add</span><span class="p">(</span><span class="n">selectedResponse</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">curve</span> <span class="o">=</span> <span class="n">selectedResponse</span><span class="o">.</span><span class="n">artist</span>
+                <span class="n">idx</span> <span class="o">=</span> <span class="n">plottedResponses</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">curve</span><span class="p">)</span>
+
+                <span class="c1"># set annotation to show formatted parameters:</span>
+                <span class="c1"># todo</span>
+                <span class="n">selectedResponse</span><span class="o">.</span><span class="n">annotation</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">text</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">responses</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">selectedResponse</span><span class="o">.</span><span class="n">annotation</span><span class="o">.</span><span class="n">get_bbox_patch</span><span class="p">()</span><span class="o">.</span><span class="n">set</span><span class="p">(</span>
+                    <span class="n">fc</span><span class="o">=</span><span class="s2">&quot;white&quot;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.8</span>
+                <span class="p">)</span>  <span class="c1"># todo: make these parameters variable</span>
+
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+        <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="ResponseSet.plot_3D_mds">
+<a class="viewcode-back" href="../../BuildYourOwnEmbedding.html#BuildYourOwnEmbedding.responses.ResponseSet.plot_3D_mds">[docs]</a>
+    <span class="k">def</span> <span class="nf">plot_3D_mds</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">dissimilarityMetric</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span>
+            <span class="p">[</span><span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">,</span> <span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">],</span> <span class="n">npt</span><span class="o">.</span><span class="n">number</span>
+        <span class="p">]</span> <span class="o">=</span> <span class="n">inverse_correlation</span><span class="p">,</span>
+        <span class="n">xlabel</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;MDS Dimension 1&quot;</span><span class="p">,</span>
+        <span class="n">ylabel</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;MDS Dimension 2&quot;</span><span class="p">,</span>
+        <span class="n">zlabel</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;MDS Dimension 3&quot;</span><span class="p">,</span>
+        <span class="n">cmap</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;viridis&quot;</span><span class="p">,</span>
+        <span class="n">cbarLabel</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">title</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">figsize</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="mi">7</span><span class="p">),</span>
+        <span class="n">responseToColour</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="n">ResponseData</span><span class="p">],</span> <span class="n">npt</span><span class="o">.</span><span class="n">number</span><span class="p">],</span> <span class="nb">str</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+
+        <span class="c1"># compute dissimilarity</span>
+        <span class="n">rdm</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_rdm</span><span class="p">(</span><span class="n">dissimilarityMetric</span><span class="p">)</span>
+
+        <span class="c1"># compute 3D MDS:</span>
+        <span class="n">mdsCoords</span> <span class="o">=</span> <span class="n">mds</span><span class="p">(</span><span class="n">rdm</span><span class="p">,</span> <span class="n">nComponents</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+
+        <span class="c1"># display:</span>
+        <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="n">figsize</span><span class="p">)</span>
+        <span class="n">ax</span><span class="p">:</span> <span class="n">Axes3D</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="n">projection</span><span class="o">=</span><span class="s2">&quot;3d&quot;</span><span class="p">)</span>
+
+        <span class="c1"># get colours / values based on colorFunction (if it exists)</span>
+        <span class="k">if</span> <span class="n">responseToColour</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">responseToColour</span><span class="p">)</span> <span class="o">==</span> <span class="nb">str</span><span class="p">:</span>
+                <span class="n">colours</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="n">response</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="n">responseToColour</span><span class="p">]</span> <span class="k">for</span> <span class="n">response</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">responses</span>
+                <span class="p">]</span>
+            <span class="k">elif</span> <span class="nb">callable</span><span class="p">(</span><span class="n">responseToColour</span><span class="p">):</span>
+                <span class="n">colours</span> <span class="o">=</span> <span class="p">[</span><span class="n">responseToColour</span><span class="p">(</span><span class="n">response</span><span class="p">)</span> <span class="k">for</span> <span class="n">response</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">responses</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># use first parameter value as default if no colour value is provided</span>
+            <span class="n">colours</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span> <span class="k">for</span> <span class="n">response</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">responses</span>
+            <span class="p">]</span>
+
+        <span class="c1"># create the scatter plot:</span>
+        <span class="n">scat</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span>
+            <span class="n">mdsCoords</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span>
+            <span class="n">mdsCoords</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span>
+            <span class="n">mdsCoords</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">],</span>
+            <span class="n">c</span><span class="o">=</span><span class="n">colours</span><span class="p">,</span>
+            <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">,</span>
+            <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;o&quot;</span><span class="p">,</span>
+            <span class="n">s</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># set labels and title:</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="n">xlabel</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">ylabel</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_zlabel</span><span class="p">(</span><span class="n">zlabel</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">title</span><span class="p">)</span>
+
+        <span class="c1"># add colour bar:</span>
+        <span class="n">cb</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">scat</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">shrink</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">aspect</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>  <span class="c1"># ?</span>
+        <span class="k">if</span> <span class="n">cbarLabel</span><span class="p">:</span>
+            <span class="n">cb</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span><span class="n">cbarLabel</span><span class="p">)</span>
+
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Satya Jhaveri.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
