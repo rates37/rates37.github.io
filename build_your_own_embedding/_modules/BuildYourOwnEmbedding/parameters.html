@@ -109,6 +109,11 @@
 
 
     <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets the number of values that this parameter can take on.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            int: The number of values that the Parameter will take.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">numSamples</span></div>
 
 
@@ -123,6 +128,16 @@
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">minValue</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">number</span><span class="p">,</span> <span class="n">maxValue</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">number</span><span class="p">,</span> <span class="n">numSamples</span><span class="p">:</span> <span class="nb">int</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Constructor for UniformRangeParameter class.</span>
+
+<span class="sd">        This Parameter takes on a uniform range of values between `minValue` and</span>
+<span class="sd">        `maxValue`, with `numSamples` evenly spaced points.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            minValue (np.number): The minimum value that the parameter can take on</span>
+<span class="sd">            maxValue (np.number): The maximum value that the parameter can take on</span>
+<span class="sd">            numSamples (int): The number of different values that the parameter can take on</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">numSamples</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">minValue</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">number</span> <span class="o">=</span> <span class="n">minValue</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">maxValue</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">number</span> <span class="o">=</span> <span class="n">maxValue</span>
@@ -156,6 +171,16 @@
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">minValue</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">number</span><span class="p">,</span> <span class="n">maxValue</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">number</span><span class="p">,</span> <span class="n">numSamples</span><span class="p">:</span> <span class="nb">int</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Constructor for the RandomRangeParameter class.</span>
+
+<span class="sd">        This Parameter takes on a random sample of `numSamples` values between</span>
+<span class="sd">        `minValue` and `maxValue`.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            minValue (np.number): The minimum value that the parameter can take on</span>
+<span class="sd">            maxValue (np.number): The maximum value that the parameter can take on</span>
+<span class="sd">            numSamples (int): The number of different values that the parameter can take on</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">numSamples</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">minValue</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">number</span> <span class="o">=</span> <span class="n">minValue</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">maxValue</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">number</span> <span class="o">=</span> <span class="n">maxValue</span>
@@ -191,6 +216,16 @@
         <span class="n">values</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">number</span><span class="p">]],</span>
         <span class="n">dtype</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Constructor for the FixedParameterSet class.</span>
+
+<span class="sd">        This parameter takes on a specific sequence of values.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            values (Union[npt.NDArray, List[np.number]]): A list or array</span>
+<span class="sd">                containing a sequence of values that the parameter should take on</span>
+<span class="sd">            dtype (npt.DTypeLike, optional): The data type that the values should</span>
+<span class="sd">                be returned as. Defaults to np.float64.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
 
@@ -218,6 +253,16 @@
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">minValue</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">number</span><span class="p">,</span> <span class="n">maxValue</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">number</span><span class="p">,</span> <span class="n">numSamples</span><span class="p">:</span> <span class="nb">int</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Constructor for the LogRangeParameter class.</span>
+
+<span class="sd">        This Parameter takes on a range of `numSamples` values logarithmically</span>
+<span class="sd">        spaced between `minValue` and `maxValue`.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            minValue (np.number): The minimum value that the parameter can take on</span>
+<span class="sd">            maxValue (np.number): The maximum value that the parameter can take on</span>
+<span class="sd">            numSamples (int): The number of different values that the parameter can take on</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">numSamples</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">minValue</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">number</span> <span class="o">=</span> <span class="n">minValue</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">maxValue</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">number</span> <span class="o">=</span> <span class="n">maxValue</span>
@@ -249,6 +294,13 @@
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">number</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Constructor for the ConstantParameter class.</span>
+
+<span class="sd">        This Parameter always only ever takes on a single value.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            value (np.number): The value that this parameter will take on.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># only ever 1 value</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">number</span> <span class="o">=</span> <span class="n">value</span>
 
@@ -265,9 +317,7 @@
 <span class="sd">            npt.NDArray: An array of size numSamples where all elements are the same value.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">fill_value</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">)</span></div>
-
-
-    <span class="k">pass</span></div>
+</div>
 
 </pre></div>
 

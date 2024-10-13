@@ -80,12 +80,14 @@
 <span class="kn">import</span> <span class="nn">inspect</span>
 <span class="kn">import</span> <span class="nn">itertools</span>
 <span class="kn">import</span> <span class="nn">mplcursors</span>
-<span class="kn">from</span> <span class="nn">matplotlib.widgets</span> <span class="kn">import</span> <span class="n">Slider</span>
+<span class="kn">from</span> <span class="nn">matplotlib.widgets</span> <span class="kn">import</span> <span class="n">Slider</span><span class="p">,</span> <span class="n">Button</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 <span class="kn">from</span> <span class="nn">mpl_toolkits.mplot3d</span> <span class="kn">import</span> <span class="n">Axes3D</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
 
 <span class="kn">from</span> <span class="nn">.parameters</span> <span class="kn">import</span> <span class="n">Parameter</span>
-<span class="kn">from</span> <span class="nn">.functional</span> <span class="kn">import</span> <span class="n">inverse_correlation</span><span class="p">,</span> <span class="n">plot_rdm</span><span class="p">,</span> <span class="n">mds</span>
+<span class="kn">from</span> <span class="nn">.functional</span> <span class="kn">import</span> <span class="n">inverse_correlation</span><span class="p">,</span> <span class="n">plot_rdm</span><span class="p">,</span> <span class="n">mds</span><span class="p">,</span> \
+    <span class="n">pca_variance_explained</span><span class="p">,</span> <span class="n">pca</span><span class="p">,</span> <span class="n">fisher_information</span> <span class="k">as</span> <span class="n">fi</span>
 
 <span class="c1">##! =====================================</span>
 <span class="c1">##!             Responses:</span>
@@ -175,7 +177,9 @@
         <span class="k">pass</span></div>
 
 
-    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">,</span> <span class="n">noiseLevel</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">number</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">noiseType</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Gaussian&quot;</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Compute the response by calling the evaluate method.</span>
 
@@ -185,12 +189,26 @@
 <span class="sd">        Args:</span>
 <span class="sd">            x (npt.NDArray):</span>
 <span class="sd">                The input data for which the response is evaluated.</span>
+<span class="sd">            noiseLevel (npt.number, optional):</span>
+<span class="sd">                The standard deviation of Gaussian noise to be added to the response. Defaults to 0 (no noise).</span>
+<span class="sd">            noiseType (str, optional):</span>
+<span class="sd">                The type of noise to add. Defaults to &#39;Gaussian&#39;.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            npt.NDArray:</span>
 <span class="sd">                The response values computed by the `evaluate` method.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">noiseLevel</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">response</span>
+
+        <span class="k">if</span> <span class="n">noiseType</span> <span class="o">==</span> <span class="s2">&quot;Gaussian&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">response</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">noiseLevel</span><span class="p">,</span> <span class="n">response</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+        <span class="c1"># Unknown noise type</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown noise type </span><span class="si">{</span><span class="n">noiseType</span><span class="si">}</span><span class="s2">. Defaulting to Gaussian noise.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">response</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">noiseLevel</span><span class="p">,</span> <span class="n">response</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__add__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">ResponseFunction</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CompositeResponse</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
@@ -294,6 +312,16 @@
 <div class="viewcode-block" id="CompositeResponse.evaluate">
 <a class="viewcode-back" href="../../BuildYourOwnEmbedding.html#BuildYourOwnEmbedding.responses.CompositeResponse.evaluate">[docs]</a>
     <span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Evaluates the CompositeResponse for a given input stimuli.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x (npt.NDArray): The input stimuli for which to generate a response.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            npt.NDArray: The response of the CompositeResponse function to the stimuli `x`.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">operation</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">response1</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">response2</span><span class="p">(</span><span class="n">x</span><span class="p">))</span></div>
 
 
@@ -307,7 +335,17 @@
 <div class="viewcode-block" id="GaussianResponse">
 <a class="viewcode-back" href="../../BuildYourOwnEmbedding.html#BuildYourOwnEmbedding.responses.GaussianResponse">[docs]</a>
 <span class="k">class</span> <span class="nc">GaussianResponse</span><span class="p">(</span><span class="n">ResponseFunction</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;GaussianResponse class. Is the response function for a 1-dimensional gaussian</span>
+<span class="sd">    response model.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mean</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">number</span><span class="p">,</span> <span class="n">std</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">number</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Constructor method for the GaussianResponse response function.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            mean (npt.number): The mean value for the desired Gaussian response function.</span>
+<span class="sd">            std (npt.number): The standard deviation of the desired Gaussian response function.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">mean</span><span class="o">=</span><span class="n">mean</span><span class="p">,</span> <span class="n">std</span><span class="o">=</span><span class="n">std</span><span class="p">)</span>
 
 <div class="viewcode-block" id="GaussianResponse.evaluate">
@@ -315,6 +353,15 @@
     <span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">,</span> <span class="n">dtype</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Evaluates the GaussianResponse response function for a given stimuli.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x (npt.NDArray): The stimuli for which to generate a response to.</span>
+<span class="sd">            dtype (npt.DTypeLike, optional): The desired data type of the output. Defaults to np.float64.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            npt.NDArray: A numpy array containing the values of the Response to the stimulus `x`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">mean</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;mean&quot;</span><span class="p">]</span>
         <span class="n">std</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;std&quot;</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">dtype</span><span class="p">(</span>
@@ -327,7 +374,17 @@
 <div class="viewcode-block" id="SigmoidResponse">
 <a class="viewcode-back" href="../../BuildYourOwnEmbedding.html#BuildYourOwnEmbedding.responses.SigmoidResponse">[docs]</a>
 <span class="k">class</span> <span class="nc">SigmoidResponse</span><span class="p">(</span><span class="n">ResponseFunction</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;SigmoidResponse class. Is the response function for a 1-dimensional sigmoid</span>
+<span class="sd">    response model.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">alpha</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">number</span><span class="p">,</span> <span class="n">beta</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">number</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Constructor for SigmoidResponse response function.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            alpha (npt.number): The alpha value (steepness of slope) of the desired sigmoid response function.</span>
+<span class="sd">            beta (npt.number): The beta value (pivot point) of the desired sigmoid response function.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span><span class="o">=</span><span class="n">beta</span><span class="p">)</span>
 
 <div class="viewcode-block" id="SigmoidResponse.evaluate">
@@ -335,6 +392,15 @@
     <span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">,</span> <span class="n">dtype</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Evaluates the SigmoidResponse response function for a given stimuli.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x (npt.NDArray): The stimuli for which to generate a response to.</span>
+<span class="sd">            dtype (npt.DTypeLike, optional): The desired data type of the output. Defaults to np.float64.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            npt.NDArray: A numpy array containing the values of the Response to the stimulus `x`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">alpha</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;alpha&quot;</span><span class="p">]</span>
         <span class="n">beta</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;beta&quot;</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">dtype</span><span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">alpha</span> <span class="o">*</span> <span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">beta</span><span class="p">))))</span></div>
@@ -345,17 +411,91 @@
 <div class="viewcode-block" id="VonMisesResponse">
 <a class="viewcode-back" href="../../BuildYourOwnEmbedding.html#BuildYourOwnEmbedding.responses.VonMisesResponse">[docs]</a>
 <span class="k">class</span> <span class="nc">VonMisesResponse</span><span class="p">(</span><span class="n">ResponseFunction</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;VonMisesResponse class. Is the response function for a 1-dimensional Von-mises</span>
+<span class="sd">    response model.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kappa</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">number</span><span class="p">,</span> <span class="n">theta</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">number</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Constructor for the VonMisesResponse response function.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            kappa (npt.number): The kappa value for the desired von-mises response.</span>
+<span class="sd">            theta (npt.number): The theta value for the desired von-mises response.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">kappa</span><span class="o">=</span><span class="n">kappa</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="n">theta</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_I0</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kappa</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">number</span><span class="p">,</span> <span class="n">numTerms</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">npt</span><span class="o">.</span><span class="n">number</span><span class="p">:</span>
+        <span class="c1"># modified bessel function of the first kind of order 0, calculated with a Maclaurin series expansion</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">cumulativeFactorial</span> <span class="o">=</span> <span class="mi">1</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">numTerms</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">cumulativeFactorial</span> <span class="o">*=</span> <span class="n">i</span>
+            <span class="n">result</span> <span class="o">+=</span> <span class="p">(</span><span class="n">kappa</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span> <span class="o">**</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">i</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">cumulativeFactorial</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">result</span>
 
 <div class="viewcode-block" id="VonMisesResponse.evaluate">
 <a class="viewcode-back" href="../../BuildYourOwnEmbedding.html#BuildYourOwnEmbedding.responses.VonMisesResponse.evaluate">[docs]</a>
     <span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">,</span> <span class="n">dtype</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Evaluates a Von-mises response for a given stimuli</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x (npt.NDArray): The stimuli for which to generate a response to.</span>
+<span class="sd">            dtype (npt.DTypeLike, optional): The desired data type of the output. Defaults to np.float64.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            npt.NDArray: A numpy array containing the values of the Response to the stimulus `x`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">kappa</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;kappa&quot;</span><span class="p">]</span>
         <span class="n">theta</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;theta&quot;</span><span class="p">]</span>
-        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">kappa</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">theta</span><span class="p">))</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sinh</span><span class="p">(</span><span class="n">kappa</span><span class="p">))</span></div>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">kappa</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">theta</span><span class="p">))</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_I0</span><span class="p">(</span><span class="n">kappa</span><span class="p">))</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="GaussianResponse2D">
+<a class="viewcode-back" href="../../BuildYourOwnEmbedding.html#BuildYourOwnEmbedding.responses.GaussianResponse2D">[docs]</a>
+<span class="k">class</span> <span class="nc">GaussianResponse2D</span><span class="p">(</span><span class="n">ResponseFunction</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">xMean</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">number</span><span class="p">,</span> <span class="n">yMean</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">number</span><span class="p">,</span> <span class="n">xStd</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">number</span><span class="p">,</span> <span class="n">yStd</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">number</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Constructor for 2D Gaussian response function.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            xMean (npt.number): The mean of the desired Gaussian response in the x-axis.</span>
+<span class="sd">            yMean (npt.number): The standard deviation of the desired Gaussian response in the x-axis.</span>
+<span class="sd">            xStd (npt.number): The mean of the desired Gaussian response in the y-axis.</span>
+<span class="sd">            yStd (npt.number): The standard deviation of the desired Gaussian response in the y-axis.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">xMean</span><span class="o">=</span><span class="n">xMean</span><span class="p">,</span> <span class="n">yMean</span><span class="o">=</span><span class="n">yMean</span><span class="p">,</span> <span class="n">xStd</span><span class="o">=</span><span class="n">xStd</span><span class="p">,</span> <span class="n">yStd</span><span class="o">=</span><span class="n">yStd</span><span class="p">)</span>
+
+<div class="viewcode-block" id="GaussianResponse2D.evaluate">
+<a class="viewcode-back" href="../../BuildYourOwnEmbedding.html#BuildYourOwnEmbedding.responses.GaussianResponse2D.evaluate">[docs]</a>
+    <span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">,</span> <span class="n">dtype</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Evaluates the GaussianResponse2D response function for a given stimuli.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x (npt.NDArray): The stimuli for which to generate a response to. This stimuli should be a 2-dimensional numpy array.</span>
+<span class="sd">            dtype (npt.DTypeLike, optional): The desired data type of the output. Defaults to np.float64.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            npt.NDArray: A numpy array containing the values of the Response to the stimulus `x`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">xVals</span><span class="p">,</span> <span class="n">yVals</span> <span class="o">=</span> <span class="n">x</span>  <span class="c1"># unpack</span>
+        <span class="k">return</span> <span class="n">dtype</span><span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span>
+                <span class="o">-</span><span class="p">(</span>
+                    <span class="p">((</span><span class="n">xVals</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;xMean&quot;</span><span class="p">])</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+                    <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;xStd&quot;</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+                    <span class="o">+</span> <span class="p">((</span><span class="n">yVals</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;yMean&quot;</span><span class="p">])</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+                    <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;yStd&quot;</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+        <span class="p">)</span></div>
 </div>
 
 
@@ -411,7 +551,7 @@
         <span class="k">return</span> <span class="p">[</span><span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">paramNames</span><span class="p">,</span> <span class="n">paramCombo</span><span class="p">))</span> <span class="k">for</span> <span class="n">paramCombo</span> <span class="ow">in</span> <span class="n">paramCombinations</span><span class="p">]</span>
 
     <span class="k">def</span> <span class="nf">_generate_response</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">,</span> <span class="n">responseParams</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">,</span> <span class="n">responseParams</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">noiseLevel</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">number</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ResponseData</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Generates a single response based on the provided parameter values</span>
@@ -419,12 +559,14 @@
 <span class="sd">        Args:</span>
 <span class="sd">            x (npt.NDArray): The input data for which the response is generated</span>
 <span class="sd">            responseParams (Dict[str, Any]): Parameter values for the response</span>
+<span class="sd">            noiseLevel (npt.number, optional):</span>
+<span class="sd">                The standard deviation of Gaussian noise to be added to the response. Defaults to 0 (no noise).</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            ResponseData: A ResponseData object containing the response values and the corresponding parameters.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">responseClasses</span><span class="p">(</span><span class="o">**</span><span class="n">responseParams</span><span class="p">)</span>
-        <span class="n">responseValues</span> <span class="o">=</span> <span class="n">response</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">responseValues</span> <span class="o">=</span> <span class="n">response</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">noiseLevel</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">ResponseData</span><span class="p">(</span>
             <span class="n">params</span><span class="o">=</span><span class="n">responseParams</span><span class="p">,</span>
             <span class="n">response</span><span class="o">=</span><span class="n">responseValues</span><span class="p">,</span>
@@ -434,18 +576,28 @@
 
 <div class="viewcode-block" id="ResponseManager.generate_responses">
 <a class="viewcode-back" href="../../BuildYourOwnEmbedding.html#BuildYourOwnEmbedding.responses.ResponseManager.generate_responses">[docs]</a>
-    <span class="k">def</span> <span class="nf">generate_responses</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">ResponseData</span><span class="p">]:</span>
+    <span class="k">def</span> <span class="nf">generate_responses</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">,</span> <span class="n">noiseLevel</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">number</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">numSamples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ResponseSet</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Generates responses for each combination of parameter values</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            x (npt.NDArray): The input data for which the response is generated</span>
+<span class="sd">            noiseLevel (npt.number, optional):</span>
+<span class="sd">                The standard deviation of Gaussian noise to be added to the response. Defaults to 0 (no noise).</span>
+<span class="sd">            numSamples (int, optional):</span>
+<span class="sd">                The number of times to sample each combination of parameters. Defaults to 1.</span>
 
 <span class="sd">        Returns:</span>
-<span class="sd">            List[ResponseData]: List of ResponseData objects containing each response and the corresponding parameters.</span>
+<span class="sd">            ResponseSet: A ResponseSet object containing each response and the corresponding parameters.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">paramCombinations</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_combinations</span><span class="p">()</span>
-        <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_generate_response</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span> <span class="k">for</span> <span class="n">params</span> <span class="ow">in</span> <span class="n">paramCombinations</span><span class="p">]</span></div>
+        <span class="n">responses</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">params</span> <span class="ow">in</span> <span class="n">paramCombinations</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">numSamples</span><span class="p">):</span>
+                <span class="n">responses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_generate_response</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">noiseLevel</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">ResponseSet</span><span class="p">(</span><span class="n">responses</span><span class="o">=</span><span class="n">responses</span><span class="p">)</span></div>
 </div>
 
 
@@ -480,7 +632,28 @@
 <div class="viewcode-block" id="ResponseSet">
 <a class="viewcode-back" href="../../BuildYourOwnEmbedding.html#BuildYourOwnEmbedding.responses.ResponseSet">[docs]</a>
 <span class="k">class</span> <span class="nc">ResponseSet</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A class for storing and analysing a set of neural responses.</span>
+
+<span class="sd">    The ResponseSet class provides methods to compute representational</span>
+<span class="sd">    dissimilarity matrices (RDM) and representational geodesic topological</span>
+<span class="sd">    matrices (RGTM), as well as functions for visualising and analysing</span>
+<span class="sd">    responses. It supports both 1D and 2D response visualisations and also</span>
+<span class="sd">    allows interactive plots.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        responses (List[ResponseData]): A list of ResponseData objects that store</span>
+<span class="sd">            the neural responses and their associated parameters.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">responses</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">ResponseData</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialise the ResponseSet with a list of response objects.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            responses (Union[None, List[ResponseData]], optional): A list of ResponseData</span>
+<span class="sd">            objects representing neural responses. Defaults to None.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">responses</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">responses</span> <span class="o">=</span> <span class="n">responses</span>
         <span class="k">else</span><span class="p">:</span>
@@ -494,6 +667,17 @@
             <span class="p">[</span><span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">,</span> <span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">],</span> <span class="n">npt</span><span class="o">.</span><span class="n">number</span>
         <span class="p">]</span> <span class="o">=</span> <span class="n">inverse_correlation</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Computes the Representational Dissimilarity Matrix (RDM) for the stored responses</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            dissimilarityMetric (Callable[ [npt.ArrayLike, npt.ArrayLike], npt.number ], optional): A function</span>
+<span class="sd">            to compute dissimilarity between two responses. Defaults to inverse_correlation.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            npt.ArrayLike: A square RDM where each entry (i, j) represents the</span>
+<span class="sd">            dissimilarity between the i-th and j-th responses.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">n</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">responses</span><span class="p">)</span>
         <span class="n">rdm</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n</span><span class="p">,</span> <span class="n">n</span><span class="p">))</span>
 
@@ -516,7 +700,21 @@
             <span class="p">[</span><span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">,</span> <span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">],</span> <span class="n">npt</span><span class="o">.</span><span class="n">number</span>
         <span class="p">]</span> <span class="o">=</span> <span class="n">inverse_correlation</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Computes the Representational Geodesic Topological Matrix (RGTM).</span>
 
+<span class="sd">        The RGTM is computed by applying a piecewise linear transformation on the</span>
+<span class="sd">        dissimilarity matrix based on the provided lower and upper bounds.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            lowerBound (npt.number): The lower bound for the transformation.</span>
+<span class="sd">            upperBound (npt.number): The upper bound for the transformation.</span>
+<span class="sd">            dissimilarityMetric (Callable[ [npt.ArrayLike, npt.ArrayLike], npt.number ], optional): A function</span>
+<span class="sd">            to compute dissimilarity between two responses. Defaults to inverse_correlation.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            npt.ArrayLike: The computed RGTM matrix.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="n">lowerBound</span> <span class="o">&lt;=</span> <span class="n">upperBound</span>
 
         <span class="n">n</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">responses</span><span class="p">)</span>
@@ -558,7 +756,20 @@
         <span class="n">figsize</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="mi">7</span><span class="p">),</span>
         <span class="n">dissimilarityLabel</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Dissimilarity&quot;</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Plots the Representational Geo-Topological Matrix (RGTM) with optional interactivity.</span>
 
+<span class="sd">        Args:</span>
+<span class="sd">            lowerBound (npt.number, optional): The lower bound for the RGTM transformation. Defaults to 0.</span>
+<span class="sd">            upperBound (npt.number, optional): The upper bound for the RGTM transformation. Defaults to 1.</span>
+<span class="sd">            dissimilarityMetric (Callable[ [npt.ArrayLike, npt.ArrayLike], npt.number ], optional): Function to compute dissimilarity between two responses. Defaults to inverse_correlation.</span>
+<span class="sd">            interactive (bool, optional): Whether to include sliders for adjusting the bounds interactively. Defaults to True.</span>
+<span class="sd">            labels (Union[List[str], None], optional): List of labels for the axes. Defaults to None.</span>
+<span class="sd">            cmap (str, optional): Colourmap used for plotting. Defaults to &quot;viridis&quot;.</span>
+<span class="sd">            title (str, optional): Title of the plot. Defaults to &quot;Representational Geo-Topological Matrix&quot;.</span>
+<span class="sd">            figsize (Tuple[int], optional):  Size of the figure. Defaults to (7, 7).</span>
+<span class="sd">            dissimilarityLabel (str, optional): Label for the colour bar. Defaults to &quot;Dissimilarity&quot;.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">rgtm</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_rgtm</span><span class="p">(</span>
             <span class="n">lowerBound</span><span class="p">,</span> <span class="n">upperBound</span><span class="p">,</span> <span class="n">dissimilarityMetric</span>
         <span class="p">)</span>
@@ -571,10 +782,9 @@
         <span class="n">plt</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">heatmap</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">dissimilarityLabel</span><span class="p">)</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">title</span><span class="p">)</span>
 
-        <span class="c1"># todo: show labels if not none:</span>
-        <span class="c1"># if labels:</span>
-        <span class="c1">#     ax.set_xticks(labels)</span>
-        <span class="c1">#     ax.set_yticks(labels)</span>
+        <span class="k">if</span> <span class="n">labels</span><span class="p">:</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">(</span><span class="n">labels</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">(</span><span class="n">labels</span><span class="p">)</span>
 
         <span class="c1"># if interactive, add interactivity behaviour:</span>
         <span class="k">if</span> <span class="n">interactive</span><span class="p">:</span>
@@ -649,9 +859,19 @@
         <span class="n">figsize</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="mi">7</span><span class="p">),</span>
         <span class="n">dissimilarityLabel</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Dissimilarity&quot;</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Plots the Representational Dissimilarity Matrix (RDM) for the stored responses.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            dissimilarityMetric (Callable[ [npt.ArrayLike, npt.ArrayLike], npt.number ], optional): Function to compute dissimilarity between two responses. Defaults to inverse_correlation.</span>
+<span class="sd">            labels (Union[List[str], None], optional): Labels for the plot&#39;s x and y axes. Defaults to None.</span>
+<span class="sd">            cmap (str, optional): Colourmap for the plot. Defaults to &quot;viridis&quot;.</span>
+<span class="sd">            title (str, optional): Title of the plot. Defaults to None.</span>
+<span class="sd">            figsize (Tuple[int], optional): Size of the figure. Defaults to (7, 7).</span>
+<span class="sd">            dissimilarityLabel (str, optional): Label for the colour bar. Defaults to &quot;Dissimilarity&quot;.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">rdm</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_rdm</span><span class="p">(</span><span class="n">dissimilarityMetric</span><span class="p">)</span>
-        <span class="n">plot_rdm</span><span class="p">(</span><span class="n">rdm</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">cmap</span><span class="p">,</span> <span class="n">title</span><span class="p">,</span> <span class="n">figsize</span><span class="p">,</span> <span class="n">dissimilarityLabel</span><span class="p">)</span>
-        <span class="k">pass</span></div>
+        <span class="n">plot_rdm</span><span class="p">(</span><span class="n">rdm</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">cmap</span><span class="p">,</span> <span class="n">title</span><span class="p">,</span> <span class="n">figsize</span><span class="p">,</span> <span class="n">dissimilarityLabel</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="ResponseSet.plot_responses">
@@ -664,8 +884,57 @@
         <span class="n">title</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Responses&quot;</span><span class="p">,</span>
         <span class="n">grid</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">hoverEffects</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>  <span class="c1"># if false will not add hover effect to plot</span>
+        <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Plots the responses in 1D or 2D format.</span>
 
+<span class="sd">        Higher dimensional plots are not currently supported.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            figsize (Tuple[int], optional): Size of the figure. Defaults to (7, 7).</span>
+<span class="sd">            xlabel (str, optional): Label for the x-axis. Defaults to &quot;Stimuli&quot;.</span>
+<span class="sd">            ylabel (str, optional): Label for the y-axis. Defaults to &quot;Response&quot;.</span>
+<span class="sd">            title (str, optional): Title of the plot. Defaults to &quot;Responses&quot;.</span>
+<span class="sd">            grid (bool, optional): Whether to display a grid on the plot. Defaults to False.</span>
+<span class="sd">            hoverEffects (bool, optional): If True, adds hover effects to the plot. Defaults to True.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            NotImplementedError: If the ResponseData represents 3-dimensional or higher curves.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">responseShape</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">responses</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+        <span class="c1"># plot 1-d responses:</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">responseShape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_plot_responses_1d</span><span class="p">(</span>
+                <span class="n">figsize</span><span class="p">,</span> <span class="n">xlabel</span><span class="p">,</span> <span class="n">ylabel</span><span class="p">,</span> <span class="n">title</span><span class="p">,</span> <span class="n">grid</span><span class="p">,</span> <span class="n">hoverEffects</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+            <span class="p">)</span>
+        <span class="c1"># plot 2-d responses:</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">responseShape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_plot_responses_2d</span><span class="p">(</span>
+                <span class="n">figsize</span><span class="o">=</span><span class="n">figsize</span><span class="p">,</span>
+                <span class="n">xlabel</span><span class="o">=</span><span class="n">xlabel</span><span class="p">,</span>
+                <span class="n">ylabel</span><span class="o">=</span><span class="n">ylabel</span><span class="p">,</span>
+                <span class="n">title</span><span class="o">=</span><span class="n">title</span><span class="p">,</span>
+                <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+                <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+                <span class="s2">&quot;plotting responses higher than two dimensions is not currently supported&quot;</span>
+            <span class="p">)</span></div>
+
+
+    <span class="k">def</span> <span class="nf">_plot_responses_1d</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">figsize</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="mi">7</span><span class="p">),</span>
+        <span class="n">xlabel</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Stimuli&quot;</span><span class="p">,</span>
+        <span class="n">ylabel</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Response&quot;</span><span class="p">,</span>
+        <span class="n">title</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Responses&quot;</span><span class="p">,</span>
+        <span class="n">grid</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">hoverEffects</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>  <span class="c1"># if false will not add hover effect to plot</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="c1"># plot the responses:</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="n">figsize</span><span class="p">)</span>
         <span class="n">plottedResponses</span> <span class="o">=</span> <span class="p">[]</span>
@@ -696,8 +965,114 @@
                 <span class="p">)</span>  <span class="c1"># todo: make these parameters variable</span>
 
         <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
-        <span class="k">pass</span></div>
 
+    <span class="k">def</span> <span class="nf">_plot_responses_2d</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">figsize</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="mi">7</span><span class="p">),</span>
+        <span class="n">xlabel</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Stimuli 1&quot;</span><span class="p">,</span>
+        <span class="n">zlabel</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Stimuli 2&quot;</span><span class="p">,</span>
+        <span class="n">ylabel</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Response&quot;</span><span class="p">,</span>
+        <span class="n">title</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;2D Tuning Curve Visualisation&quot;</span><span class="p">,</span>
+        <span class="n">cmap</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;viridis&quot;</span><span class="p">,</span>
+        <span class="nb">type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;heatmap&quot;</span><span class="p">,</span>  <span class="c1"># can be &quot;heatmap&quot; or &quot;surfaceplot&quot;</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">type</span> <span class="o">==</span> <span class="s2">&quot;surfaceplot&quot;</span><span class="p">:</span>
+            <span class="c1"># plot the responses:</span>
+            <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="n">figsize</span><span class="p">)</span>
+            <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">,</span> <span class="n">projection</span><span class="o">=</span><span class="s2">&quot;3d&quot;</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">currentResponseIndex</span> <span class="o">=</span> <span class="mi">0</span>
+
+            <span class="c1"># function to click through plot:</span>
+            <span class="k">def</span> <span class="nf">update_plot</span><span class="p">(</span><span class="n">responseIndex</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+                <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">responses</span><span class="p">[</span><span class="n">responseIndex</span><span class="p">]</span><span class="o">.</span><span class="n">response</span>
+                <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">responses</span><span class="p">[</span><span class="n">responseIndex</span><span class="p">]</span><span class="o">.</span><span class="n">x</span>
+
+                <span class="n">ax</span><span class="o">.</span><span class="n">plot_surface</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">response</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">)</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="n">xlabel</span><span class="p">)</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">ylabel</span><span class="p">)</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_zlabel</span><span class="p">(</span><span class="n">zlabel</span><span class="p">)</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">title</span><span class="p">)</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
+
+            <span class="n">update_plot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">currentResponseIndex</span><span class="p">)</span>
+
+            <span class="c1"># function for when next button is clicked:</span>
+            <span class="k">def</span> <span class="nf">next_response</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">currentResponseIndex</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">currentResponseIndex</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">responses</span>
+                <span class="p">)</span>
+                <span class="n">update_plot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">currentResponseIndex</span><span class="p">)</span>
+
+            <span class="c1"># function for when previous button is clicked:</span>
+            <span class="k">def</span> <span class="nf">prev_response</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">currentResponseIndex</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">currentResponseIndex</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">responses</span>
+                <span class="p">)</span>
+                <span class="n">update_plot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">currentResponseIndex</span><span class="p">)</span>
+
+            <span class="c1"># add buttons for interactivity:</span>
+            <span class="n">axNext</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">axes</span><span class="p">([</span><span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.075</span><span class="p">])</span>
+            <span class="n">btnNext</span> <span class="o">=</span> <span class="n">Button</span><span class="p">(</span><span class="n">axNext</span><span class="p">,</span> <span class="s2">&quot;Next&quot;</span><span class="p">)</span>
+            <span class="n">btnNext</span><span class="o">.</span><span class="n">on_clicked</span><span class="p">(</span><span class="n">next_response</span><span class="p">)</span>
+            <span class="n">axPrev</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">axes</span><span class="p">([</span><span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.075</span><span class="p">])</span>
+            <span class="n">btnPrev</span> <span class="o">=</span> <span class="n">Button</span><span class="p">(</span><span class="n">axPrev</span><span class="p">,</span> <span class="s2">&quot;Previous&quot;</span><span class="p">)</span>
+            <span class="n">btnPrev</span><span class="o">.</span><span class="n">on_clicked</span><span class="p">(</span><span class="n">prev_response</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="nb">type</span> <span class="o">==</span> <span class="s2">&quot;heatmap&quot;</span><span class="p">:</span>
+            <span class="c1"># Plot the responses as a heatmap</span>
+            <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="n">figsize</span><span class="p">)</span>
+            <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">currentResponseIndex</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="kn">from</span> <span class="nn">matplotlib.colorbar</span> <span class="kn">import</span> <span class="n">Colorbar</span>
+
+            <span class="n">colourbar</span><span class="p">:</span> <span class="n">Colorbar</span> <span class="o">=</span> <span class="kc">None</span>
+
+            <span class="c1"># function to update heatmap plot</span>
+            <span class="k">def</span> <span class="nf">update_plot</span><span class="p">(</span><span class="n">responseIndex</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">nonlocal</span> <span class="n">colourbar</span>
+                <span class="c1"># fig.clear()</span>
+                <span class="c1"># ax = fig.add_subplot(111)</span>
+                <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">responses</span><span class="p">[</span><span class="n">responseIndex</span><span class="p">]</span><span class="o">.</span><span class="n">response</span>
+                <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">responses</span><span class="p">[</span><span class="n">responseIndex</span><span class="p">]</span><span class="o">.</span><span class="n">x</span>
+
+                <span class="n">c</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span>
+                    <span class="n">response</span><span class="p">,</span>
+                    <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">,</span>
+                    <span class="n">origin</span><span class="o">=</span><span class="s2">&quot;lower&quot;</span><span class="p">,</span>
+                    <span class="n">extent</span><span class="o">=</span><span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">x</span><span class="o">.</span><span class="n">max</span><span class="p">(),</span> <span class="n">y</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">y</span><span class="o">.</span><span class="n">max</span><span class="p">()],</span>
+                <span class="p">)</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="n">xlabel</span><span class="p">)</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">ylabel</span><span class="p">)</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">title</span><span class="p">)</span>
+                <span class="c1"># colourbar = fig.colorbar(c, ax=ax)</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
+
+            <span class="n">update_plot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">currentResponseIndex</span><span class="p">)</span>
+
+            <span class="c1"># function for when next button is clicked:</span>
+            <span class="k">def</span> <span class="nf">next_response</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">currentResponseIndex</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">currentResponseIndex</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">responses</span>
+                <span class="p">)</span>
+                <span class="n">update_plot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">currentResponseIndex</span><span class="p">)</span>
+
+            <span class="c1"># function for when previous button is clicked:</span>
+            <span class="k">def</span> <span class="nf">prev_response</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">currentResponseIndex</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">currentResponseIndex</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">responses</span>
+                <span class="p">)</span>
+                <span class="n">update_plot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">currentResponseIndex</span><span class="p">)</span>
+
+            <span class="c1"># add buttons for interactivity:</span>
+            <span class="n">axNext</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">axes</span><span class="p">([</span><span class="mf">0.8</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.075</span><span class="p">])</span>
+            <span class="n">btnNext</span> <span class="o">=</span> <span class="n">Button</span><span class="p">(</span><span class="n">axNext</span><span class="p">,</span> <span class="s2">&quot;Next&quot;</span><span class="p">)</span>
+            <span class="n">btnNext</span><span class="o">.</span><span class="n">on_clicked</span><span class="p">(</span><span class="n">next_response</span><span class="p">)</span>
+            <span class="n">axPrev</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">axes</span><span class="p">([</span><span class="mf">0.7</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.075</span><span class="p">])</span>
+            <span class="n">btnPrev</span> <span class="o">=</span> <span class="n">Button</span><span class="p">(</span><span class="n">axPrev</span><span class="p">,</span> <span class="s2">&quot;Previous&quot;</span><span class="p">)</span>
+            <span class="n">btnPrev</span><span class="o">.</span><span class="n">on_clicked</span><span class="p">(</span><span class="n">prev_response</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 
 <div class="viewcode-block" id="ResponseSet.plot_3D_mds">
 <a class="viewcode-back" href="../../BuildYourOwnEmbedding.html#BuildYourOwnEmbedding.responses.ResponseSet.plot_3D_mds">[docs]</a>
@@ -715,7 +1090,29 @@
         <span class="n">figsize</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="mi">7</span><span class="p">),</span>
         <span class="n">responseToColour</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="n">ResponseData</span><span class="p">],</span> <span class="n">npt</span><span class="o">.</span><span class="n">number</span><span class="p">],</span> <span class="nb">str</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Plots a 3D Multidimensional Scaling (MDS) scatter plot for the stored responses.</span>
 
+<span class="sd">        This method computes a 3D MDS embedding from the dissimilarity matrix of the responses</span>
+<span class="sd">        and visualises the responses in a 3D scatter plot. The color of each point in the scatter</span>
+<span class="sd">        plot can be customized based on response parameters or a user-defined function.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            dissimilarityMetric (Callable[ [npt.ArrayLike, npt.ArrayLike], npt.number ], optional):</span>
+<span class="sd">                A function to compute the dissimilarity between two responses. Defaults to inverse_correlation.</span>
+<span class="sd">            xlabel (str, optional): Label for the x-axis of the MDS plot. Defaults to &quot;MDS Dimension 1&quot;.</span>
+<span class="sd">            ylabel (str, optional): Label for the y-axis of the MDS plot. Defaults to &quot;MDS Dimension 2&quot;.</span>
+<span class="sd">            zlabel (str, optional): Label for the z-axis of the MDS plot. Defaults to &quot;MDS Dimension 3&quot;.</span>
+<span class="sd">            cmap (str, optional): The colourmap used for coloring the scatter points. Defaults to &quot;viridis&quot;.</span>
+<span class="sd">            cbarLabel (Union[str, None], optional): Label for the colour bar. Defaults to None.</span>
+<span class="sd">            title (str, optional): Title of the plot. Defaults to None.</span>
+<span class="sd">            figsize (Tuple[int], optional):  The size of the figure. Defaults to (7, 7).</span>
+<span class="sd">            responseToColour (Union[Callable[[ResponseData], npt.number], str, None], optional):</span>
+<span class="sd">                A function or string to define the color mapping for the scatter points. If</span>
+<span class="sd">                a string is passed, it should be the name of a parameter in the responses.</span>
+<span class="sd">                If a callable is passed, it should be a function that maps a `ResponseData`</span>
+<span class="sd">                object to a numeric value for coloring the points. Defaults to None.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># compute dissimilarity</span>
         <span class="n">rdm</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_rdm</span><span class="p">(</span><span class="n">dissimilarityMetric</span><span class="p">)</span>
 
@@ -763,6 +1160,169 @@
             <span class="n">cb</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span><span class="n">cbarLabel</span><span class="p">)</span>
 
         <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="ResponseSet.plot_2D_mds">
+<a class="viewcode-back" href="../../BuildYourOwnEmbedding.html#BuildYourOwnEmbedding.responses.ResponseSet.plot_2D_mds">[docs]</a>
+    <span class="k">def</span> <span class="nf">plot_2D_mds</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">dissimilarityMetric</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span>
+            <span class="p">[</span><span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">,</span> <span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">],</span> <span class="n">npt</span><span class="o">.</span><span class="n">number</span>
+        <span class="p">]</span> <span class="o">=</span> <span class="n">inverse_correlation</span><span class="p">,</span>
+        <span class="n">xlabel</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;MDS Dimension 1&quot;</span><span class="p">,</span>
+        <span class="n">ylabel</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;MDS Dimension 2&quot;</span><span class="p">,</span>
+        <span class="n">cmap</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;viridis&quot;</span><span class="p">,</span>
+        <span class="n">cbarLabel</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">title</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">figsize</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="mi">7</span><span class="p">),</span>
+        <span class="n">responseToColour</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="n">ResponseData</span><span class="p">],</span> <span class="n">npt</span><span class="o">.</span><span class="n">number</span><span class="p">],</span> <span class="nb">str</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Plots a 2D Multidimensional Scaling (MDS) scatter plot for the stored responses.</span>
+
+<span class="sd">        This method computes a 2D MDS embedding from the dissimilarity matrix of the responses</span>
+<span class="sd">        and visualises the responses in a 2D scatter plot. The color of each point in the scatter</span>
+<span class="sd">        plot can be customized based on response parameters or a user-defined function.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            dissimilarityMetric (Callable[ [npt.ArrayLike, npt.ArrayLike], npt.number ], optional):</span>
+<span class="sd">                A function to compute the dissimilarity between two responses. Defaults to inverse_correlation.</span>
+<span class="sd">            xlabel (str, optional): Label for the x-axis of the MDS plot. Defaults to &quot;MDS Dimension 1&quot;.</span>
+<span class="sd">            ylabel (str, optional): Label for the y-axis of the MDS plot. Defaults to &quot;MDS Dimension 2&quot;.</span>
+<span class="sd">            cmap (str, optional): The colourmap used for coloring the scatter points. Defaults to &quot;viridis&quot;.</span>
+<span class="sd">            cbarLabel (Union[str, None], optional): Label for the colour bar. Defaults to None.</span>
+<span class="sd">            title (str, optional): Title of the plot. Defaults to None.</span>
+<span class="sd">            figsize (Tuple[int], optional):  The size of the figure. Defaults to (7, 7).</span>
+<span class="sd">            responseToColour (Union[Callable[[ResponseData], npt.number], str, None], optional):</span>
+<span class="sd">                A function or string to define the color mapping for the scatter points. If</span>
+<span class="sd">                a string is passed, it should be the name of a parameter in the responses.</span>
+<span class="sd">                If a callable is passed, it should be a function that maps a `ResponseData`</span>
+<span class="sd">                object to a numeric value for coloring the points. Defaults to None.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># compute dissimilarity</span>
+        <span class="n">rdm</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_rdm</span><span class="p">(</span><span class="n">dissimilarityMetric</span><span class="p">)</span>
+
+        <span class="c1"># compute 3D MDS:</span>
+        <span class="n">mdsCoords</span> <span class="o">=</span> <span class="n">mds</span><span class="p">(</span><span class="n">rdm</span><span class="p">,</span> <span class="n">nComponents</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+        <span class="c1"># display:</span>
+        <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="n">figsize</span><span class="p">)</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">figure</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># get colours / values based on colorFunction (if it exists)</span>
+        <span class="k">if</span> <span class="n">responseToColour</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">responseToColour</span><span class="p">)</span> <span class="o">==</span> <span class="nb">str</span><span class="p">:</span>
+                <span class="n">colours</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="n">response</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="n">responseToColour</span><span class="p">]</span> <span class="k">for</span> <span class="n">response</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">responses</span>
+                <span class="p">]</span>
+            <span class="k">elif</span> <span class="nb">callable</span><span class="p">(</span><span class="n">responseToColour</span><span class="p">):</span>
+                <span class="n">colours</span> <span class="o">=</span> <span class="p">[</span><span class="n">responseToColour</span><span class="p">(</span><span class="n">response</span><span class="p">)</span> <span class="k">for</span> <span class="n">response</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">responses</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># use first parameter value as default if no colour value is provided</span>
+            <span class="n">colours</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span> <span class="k">for</span> <span class="n">response</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">responses</span>
+            <span class="p">]</span>
+
+        <span class="c1"># create the scatter plot:</span>
+        <span class="n">scat</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span>
+            <span class="n">mdsCoords</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span>
+            <span class="n">mdsCoords</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span>
+            <span class="n">c</span><span class="o">=</span><span class="n">colours</span><span class="p">,</span>
+            <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">,</span>
+            <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;o&quot;</span><span class="p">,</span>
+            <span class="n">s</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># set labels and title:</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="n">xlabel</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">ylabel</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">title</span><span class="p">)</span>
+
+        <span class="c1"># add colour bar:</span>
+        <span class="n">cb</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">scat</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">shrink</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">aspect</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>  <span class="c1"># ?</span>
+        <span class="k">if</span> <span class="n">cbarLabel</span><span class="p">:</span>
+            <span class="n">cb</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span><span class="n">cbarLabel</span><span class="p">)</span>
+
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="ResponseSet.plot_PCA_variance_explained">
+<a class="viewcode-back" href="../../BuildYourOwnEmbedding.html#BuildYourOwnEmbedding.responses.ResponseSet.plot_PCA_variance_explained">[docs]</a>
+    <span class="k">def</span> <span class="nf">plot_PCA_variance_explained</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">dissimilarityMetric</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span>
+            <span class="p">[</span><span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">,</span> <span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">],</span> <span class="n">npt</span><span class="o">.</span><span class="n">number</span>
+        <span class="p">]</span> <span class="o">=</span> <span class="n">inverse_correlation</span><span class="p">,</span>
+        <span class="n">xlabel</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Number of Principal Components&quot;</span><span class="p">,</span>
+        <span class="n">ylabel</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Variance Explained&quot;</span><span class="p">,</span>
+        <span class="n">title</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Variance Explained vs. Number of Principal Components&quot;</span><span class="p">,</span>
+        <span class="n">figsize</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="mi">7</span><span class="p">),</span>
+        <span class="n">grid</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Plots the variance explained by each principal component from PCA on the dissimilarity matrix.</span>
+
+<span class="sd">        This method computes the Principal Component Analysis (PCA) of the dissimilarity matrix</span>
+<span class="sd">        and visualises the variance explained by each principal component in a line plot. This</span>
+<span class="sd">        provides insight into how much variance each component captures, helping to determine</span>
+<span class="sd">        how many components are needed for sufficient variance representation.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            dissimilarityMetric (Callable[ [npt.ArrayLike, npt.ArrayLike], npt.number ], optional):</span>
+<span class="sd">                A function to compute the dissimilarity between two responses. Defaults to inverse_correlation.</span>
+<span class="sd">            xlabel (str, optional): Label for the x-axis. Defaults to &#39;Number of Principal Components&#39;.</span>
+<span class="sd">            ylabel (str, optional): Label for the y-axis. Defaults to &#39;Variance Explained&#39;.</span>
+<span class="sd">            title (str, optional): Title of the plot. Defaults to &#39;Variance Explained vs. Number of Principal Components&#39;.</span>
+<span class="sd">            figsize (Tuple[int], optional): Size of the figure. Defaults to (7, 7).</span>
+<span class="sd">            grid (bool, optional): Whether to show grid lines on the plot. Defaults to False.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># compute dissimilarity</span>
+        <span class="n">rdm</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_rdm</span><span class="p">(</span><span class="n">dissimilarityMetric</span><span class="p">)</span>
+
+        <span class="c1"># compute PCA variance explained:</span>
+        <span class="n">pcaVarianceExplained</span> <span class="o">=</span> <span class="n">pca_variance_explained</span><span class="p">(</span><span class="n">rdm</span><span class="p">)</span>
+
+        <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="n">figsize</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+            <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">pcaVarianceExplained</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span> <span class="n">pcaVarianceExplained</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;o&quot;</span>
+        <span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="n">xlabel</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="n">ylabel</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="n">title</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">grid</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="ResponseSet.plot_2D_PCA">
+<a class="viewcode-back" href="../../BuildYourOwnEmbedding.html#BuildYourOwnEmbedding.responses.ResponseSet.plot_2D_PCA">[docs]</a>
+    <span class="k">def</span> <span class="nf">plot_2D_PCA</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">xlabel</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;PC 1&quot;</span><span class="p">,</span>
+        <span class="n">ylabel</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;PC 2&quot;</span><span class="p">,</span>
+        <span class="n">title</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;2D PCA of Embedding&quot;</span><span class="p">,</span>
+        <span class="n">figsize</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="mi">7</span><span class="p">),</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">curves</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">r</span><span class="o">.</span><span class="n">response</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">responses</span><span class="p">])</span>
+        <span class="n">pcs</span> <span class="o">=</span> <span class="n">pca</span><span class="p">(</span><span class="n">curves</span><span class="p">,</span> <span class="n">nComponents</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+        <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="n">figsize</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">pcs</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">pcs</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">])</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="n">xlabel</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="n">ylabel</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="n">title</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div>
+
+          
+<div class="viewcode-block" id="ResponseSet.fisher_information">
+<a class="viewcode-back" href="../../BuildYourOwnEmbedding.html#BuildYourOwnEmbedding.responses.ResponseSet.fisher_information">[docs]</a>
+    <span class="k">def</span> <span class="nf">fisher_information</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Computes the fisher information of the set of responses</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            npt.NDArray: A numpy array containing the fisher information of the stored responses.</span>
+<span class="sd">        &quot;&quot;&quot;</span>        
+        <span class="n">curves</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">r</span><span class="o">.</span><span class="n">response</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">responses</span><span class="p">])</span> 
+        <span class="k">return</span> <span class="n">fi</span><span class="p">(</span><span class="n">curves</span><span class="p">)</span></div>
 </div>
 
 </pre></div>
